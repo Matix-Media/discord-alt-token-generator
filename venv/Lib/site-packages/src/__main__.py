@@ -1,0 +1,20 @@
+import os
+import random
+
+
+def main():
+    directory_path = os.path.dirname(__file__)
+    adjectives, nouns = [], []
+    with open(os.path.join(directory_path, 'data', 'adjectives.txt'), 'r') as file_adjective:
+        with open(os.path.join(directory_path, 'data', 'nouns.txt'), 'r') as file_noun:
+            for line in file_adjective:
+                adjectives.append(line.strip())
+            for line in file_noun:
+                nouns.append(line.strip())
+    adjective = random.choice(adjectives)
+    noun = random.choice(nouns).capitalize()
+    num = str(random.randrange(10))
+    return adjective + noun + num
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,3 @@
+[console_scripts]
+random_username = random_username.__main__:main
+
