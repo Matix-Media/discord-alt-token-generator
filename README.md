@@ -8,7 +8,8 @@ First you have to active the virutal enviroment wich contains packages and a pyt
 ```> venv\Scripts\activate```
 
 
-Now there should be a `(venv)` infront of your current folder in the command prompt.
+Now there should be a `(venv)` infront of your current folder in the command prompt. Sometinh like this:
+```(venv) PS C:\Users\user\Documents\Python\Documents\discord alt token generator>```
 
 To run the generator now, just go to the help, for all infos you need.
 
