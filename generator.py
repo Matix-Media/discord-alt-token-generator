@@ -2,12 +2,16 @@ from selenium import webdriver
 from selenium.common import exceptions as sel_exceptions
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.proxy import Proxy, ProxyType
 from LocalStorage import LocalStorage
 import time
 from DiscordAccount import DiscordAccount
 from sys import argv
+from sys import stdout
 import datetime
 from os import path, mkdir
+import random
+from proxyChecker import is_bad_proxy
 
 
 class Bot():
@@ -225,6 +229,7 @@ class Bot():
         message_box.send_keys(Keys.RETURN)
         return self.account.welcome_message
 
+
         # args
 argument_list = argv[1:]
 if len(argument_list) > 0 and argument_list[0] == "help":
@@ -287,17 +292,17 @@ chrome_user_data_dir = "C:\\Users\\" + \
 # setup
 print("Setup...")
 
+if path.isfile("proxies.txt"):
+    lines = open("proxies.txt").read().splitlines()
+    proxies = lines
+    print("Proxies enabled")
+else:
+    proxies = []
+
 if not path.isdir("tokens"):
     mkdir("tokens")
 
-options = webdriver.ChromeOptions()
-options.add_argument("--user-data-dir=" + chrome_user_data_dir)
-if not show_chrome_window:
-    options.add_argument("headless")
-    options.add_argument('window-size=1200x600')
 
-driver = webdriver.Chrome(options=options)
-current_bot = Bot(driver, display_userdata=save_userdata)
 if not path.isfile("tokens/" + tokens_file_name):
     f = open("tokens/" + tokens_file_name, "w")
     f.close()
@@ -305,12 +310,34 @@ if not path.isfile("tokens/" + tokens_file_name):
 # loop
 print("\nStarting loop...\n")
 for i in range(0, alt_tokens_count):
+    options = webdriver.ChromeOptions()
+    options.add_argument("--user-data-dir=" + chrome_user_data_dir)
+    if not show_chrome_window:
+        options.add_argument("headless")
+        options.add_argument('window-size=1200x600')
+
+    if len(proxies) > 0:
+        proxy_addr = random.choice(proxies)
+        stdout.write("\rChecking proxy...")
+        if not is_bad_proxy(proxy_addr):
+            stdout.write("Proxy available       \n")
+            options.add_argument("proxy-server=socks5://" + proxy_addr)
+        else:
+            stdout.write("Proxy not available. Continuing without proxy. \n")
+
+    driver = webdriver.Chrome(options=options)
+
+    current_bot = Bot(driver, display_userdata=save_userdata)
+
     account = current_bot.generate_token()
     if not server_invite == None and not message_channel == None:
         time.sleep(current_bot.join_server_joining_timeout)
         current_bot.join_server(server_invite, direct=True)
         current_bot.write_message_in_channel(message_channel)
     current_bot.logout(direct=True)
+
+    driver.close()
+    driver.quit()
 
     if account != None:
         with open("tokens/" + tokens_file_name, "a+") as f:
@@ -320,9 +347,7 @@ for i in range(0, alt_tokens_count):
             else:
                 f.write(account.token + "\n")
 
+        print("Timeout before next register:", register_delay)
         time.sleep(register_delay)
 
 print("\nDONE Generarating " + str(alt_tokens_count) + " alt-tokens.")
-
-driver.close()
-driver.quit()
