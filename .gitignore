@@ -1,2 +1,3 @@
+tokens/
+__pycache__/
 debug.log
-tokens
