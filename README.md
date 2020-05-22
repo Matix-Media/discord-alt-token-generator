@@ -1,6 +1,12 @@
 # discord-alt-token-generator
 Alt-token generator for discord (slow)
 
+## Info
+The creator and publisher of this bot is not responsible for any kind of damage or anything else. Use of the bot is at your own risk and the creator is not responsible for bans from the Discord network.
+
+
+We recommend using a VPN when using the bot.
+
 # Usage under Windows
 First you have to active the virutal enviroment wich contains packages and a python copy. To do this, just navigate to the main folder of the scripts and type the follwing line into your command prompt
 
