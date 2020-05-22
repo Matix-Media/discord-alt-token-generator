@@ -1,5 +1,7 @@
 from selenium import webdriver
 from selenium.common import exceptions as sel_exceptions
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 from LocalStorage import LocalStorage
 import time
 from DiscordAccount import DiscordAccount
@@ -32,6 +34,15 @@ class Bot():
     shady_logout_confirm_selector = "#app-mount > div:nth-child(6) > div.modal-3c3bKg > div > form > div.flex-1xMQg5.flex-1O1GKY.horizontalReverse-2eTKWD.horizontalReverse-3tRjY7.flex-1O1GKY.directionRowReverse-m8IjIq.justifyStart-2NDFzi.alignStretch-DpGPf3.noWrap-3jynv6.footer-3rDWdC > button.button-38aScr.lookFilled-1Gx00P.colorRed-1TFJan.sizeMedium-1AC_Sl.grow-q77ONN"
     reclick_delay = 40
     recaptcha_selector = "#rc-anchor-container"
+
+    add_server_selector = "tutorialContainer-SGrQ1h"
+    add_server_popup_timeout = 1
+    join_server_button_selector = "#app-mount > div.layerContainer-yqaFcK > div.layer-2KE1M9 > div > div > div > div > div > div > div > div > div.action-1lSjCi.join-33Tr-7 > button"
+    join_server_tb_selector = "input.inputDefault-_djjkz.input-cIJ7To.input-UJ9Tr3"
+    join_server_confirm_selector = "#app-mount > div.layerContainer-yqaFcK > div.layer-2KE1M9 > div > div > div > div > form > div.flex-1xMQg5.flex-1O1GKY.horizontalReverse-2eTKWD.horizontalReverse-3tRjY7.flex-1O1GKY.directionRowReverse-m8IjIq.justifyStart-2NDFzi.alignStretch-DpGPf3.noWrap-3jynv6.footer-3rDWdC.slideFooter-2dXJ9s > button"
+    join_server_joining_timeout = 5
+
+    message_box_selector = "slateTextArea-1Mkdgw"
 
     def __init__(self, driver, display_userdata=False):
         self.driver = driver
@@ -95,6 +106,7 @@ class Bot():
     def register_account(self):
         account = DiscordAccount()
         account.generate_random_credentials()
+        self.account = account
         if self.display_userdata:
             print("Registering user: " + account.username + " Email: " + account.email +
                   " Password: " + account.password)
@@ -165,15 +177,59 @@ class Bot():
         token = token[1:-1]
         account.token = token
 
-        self.logout(direct=True)
+        self.account = account
+
+        if self.driver.find_elements_by_css_selector(self.skip_tutorial_selector):
+            skip_tutorial_button = self.driver.find_elements_by_css_selector(
+                self.skip_tutorial_selector)[0]
+            skip_tutorial_button.click()
+            time.sleep(self.skip_tutorial_timeout)
 
         return account
 
+    def join_server(self, server_invite, direct=False):
+        if not direct:
+            self.driver.get(self.app_home)
+            time.sleep(self.app_nav_timeout)
 
-# args
+        add_server_button = self.driver.find_element_by_class_name(
+            self.add_server_selector)
+        add_server_button.click()
+        time.sleep(self.add_server_popup_timeout)
+
+        join_server_button = self.driver.find_element_by_css_selector(
+            self.join_server_button_selector)
+        join_server_button.click()
+        time.sleep(self.add_server_popup_timeout)
+
+        actions = ActionChains(self.driver)
+        actions.send_keys(server_invite)
+        actions.perform()
+
+        # self.driver.execute_script(
+        #    "document.querySelector(arguments[0]).setAttribute('value', arguments[1]);", self.join_server_tb_selector, server_invite)
+
+        join_server_confirm_button = self.driver.find_element_by_css_selector(
+            self.join_server_confirm_selector)
+        join_server_confirm_button.click()
+        time.sleep(self.join_server_joining_timeout)
+
+        return self.driver.current_url
+
+    def write_message_in_channel(self, channel_url):
+        self.driver.get(channel_url)
+        time.sleep(self.app_nav_timeout)
+        message_box = self.driver.find_element_by_class_name(
+            self.message_box_selector)
+        message_box.send_keys(self.account.welcome_message)
+        message_box.send_keys(Keys.RETURN)
+        return self.account.welcome_message
+
+
+        # args
 argument_list = argv[1:]
 if len(argument_list) > 0 and argument_list[0] == "help":
-    print(":: HELP ::\n$ generator.py <number of alt-tokens to generate> <your windows username> [register delay (seconds) | default: 30] [save userdata |default: false] [tokens file name (Without extension) | default: t_<timecode>]\n\n:: INFO ::\nFor this generator, you need to have Chrome installed on this machine. Then you need to go to https://chromedriver.chromium.org/downloads and download the version of chromedriver according to your installed version of Chrome and put chromedriver.exe in the same folder with this script.\n\nYour windows username is required to get your Chrome config to bypass recaptcha.\n\nThe alt-tokens get saved into the tokens folder\n")
+    print(":: HELP ::\n$ generator.py <number of alt-tokens to generate> <your windows username> [register delay (seconds) | default: 30] [save userdata |default: false] [tokens file name (Without extension) | default: t_<timecode>] [invite to server | default: empty] [channel url | default: empty]\n\n:: INFO ::\nFor this generator, you need to have Chrome installed on this machine. Then you need to go to https://chromedriver.chromium.org/downloads and download the version of chromedriver according to your installed version of Chrome and put chromedriver.exe in the same folder with this script.\n\nYou can add a invite link to a server at the end where the bot should join and write a random message. This can be used to bypass discord's bot detection.\n\nThe channel URL is the url to the channel where a message should be written to.\n\nYour windows username is required to get your Chrome config to bypass recaptcha.\n\nThe alt-tokens get saved into the tokens folder\n")
     exit(0)
 
 if len(argument_list) < 2:
@@ -198,6 +254,18 @@ if len(argument_list) > 4:
 else:
     file_id = int(datetime.datetime.utcnow().timestamp())
     tokens_file_name = "t_" + str(file_id) + ".txt"
+
+if len(argument_list) > 5:
+    server_invite = argument_list[5]
+    print("Invite link:", server_invite)
+else:
+    server_invite = None
+
+if len(argument_list) > 6:
+    message_channel = argument_list[6]
+    print("Message channel URL:", message_channel)
+else:
+    message_channel = None
 
 if not argument_list[0].isnumeric():
     print("ERROR!\n$ generator.py help\nfor more infos.\n")
@@ -227,6 +295,11 @@ if not path.isfile("tokens/" + tokens_file_name):
 print("\nStarting loop...\n")
 for i in range(0, alt_tokens_count):
     account = current_bot.generate_token()
+    if not server_invite == None and not message_channel == None:
+        time.sleep(current_bot.join_server_joining_timeout)
+        current_bot.join_server(server_invite, direct=True)
+        current_bot.write_message_in_channel(message_channel)
+    current_bot.logout(direct=True)
 
     if account != None:
         with open("tokens/" + tokens_file_name, "a+") as f:
