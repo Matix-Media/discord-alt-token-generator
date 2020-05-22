@@ -225,7 +225,6 @@ class Bot():
         message_box.send_keys(Keys.RETURN)
         return self.account.welcome_message
 
-
         # args
 argument_list = argv[1:]
 if len(argument_list) > 0 and argument_list[0] == "help":
@@ -256,16 +255,24 @@ else:
     tokens_file_name = "t_" + str(file_id) + ".txt"
 
 if len(argument_list) > 5:
-    server_invite = argument_list[5]
-    print("Invite link:", server_invite)
+    if argument_list[5] != "":
+        server_invite = argument_list[5]
+        print("Invite link:", server_invite)
 else:
     server_invite = None
 
 if len(argument_list) > 6:
-    message_channel = argument_list[6]
-    print("Message channel URL:", message_channel)
+    if argument_list[6] != "":
+        message_channel = argument_list[6]
+        print("Message channel URL:", message_channel)
 else:
     message_channel = None
+
+if len(argument_list) > 7 and argument_list[7].lower() in ['false', '0', 'f', 'n', 'no']:
+    show_chrome_window = False
+    print("Hiding chrome window")
+else:
+    show_chrome_window = True
 
 if not argument_list[0].isnumeric():
     print("ERROR!\n$ generator.py help\nfor more infos.\n")
@@ -285,6 +292,10 @@ if not path.isdir("tokens"):
 
 options = webdriver.ChromeOptions()
 options.add_argument("--user-data-dir=" + chrome_user_data_dir)
+if not show_chrome_window:
+    options.add_argument("headless")
+    options.add_argument('window-size=1200x600')
+
 driver = webdriver.Chrome(options=options)
 current_bot = Bot(driver, display_userdata=save_userdata)
 if not path.isfile("tokens/" + tokens_file_name):
