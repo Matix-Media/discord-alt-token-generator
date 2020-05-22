@@ -18,6 +18,7 @@ class Bot():
     password_selector = "#app-mount > div.app-1q1i1E > div > div.leftSplit-1qOwnR > div > form > div > div.block-egJnc0.marginTop20-3TxNs6 > div:nth-child(3) > div > input"
     terms_selector = "#app-mount > div.app-1q1i1E > div > div.leftSplit-1qOwnR > div > form > div > div.block-egJnc0.marginTop20-3TxNs6 > div.flex-1xMQg5.flex-1O1GKY.horizontal-1ae9ci.horizontal-2EEEnY.flex-1O1GKY.directionRow-3v3tfG.justifyStart-2NDFzi.alignCenter-1dQNNs.noWrap-3jynv6.marginTop20-3TxNs6 > label > input"
     register_next_selector = "#app-mount > div.app-1q1i1E > div > div.leftSplit-1qOwnR > div > form > div > div.block-egJnc0.marginTop20-3TxNs6 > div:nth-child(5) > button"
+    register_next_selector_us = "#app-mount > div.app-1q1i1E > div > div.leftSplit-1qOwnR > div > form > div > div.block-egJnc0.marginTop20-3TxNs6 > div:nth-child(4) > button"
 
     settings_selector = "#app-mount > div.app-1q1i1E > div > div.layers-3iHuyZ.layers-3q14ss > div > div > div > div.content-98HsJk > div.sidebar-2K8pFh.hasNotice-1XRy4h > section > div > div.flex-1xMQg5.flex-1O1GKY.horizontal-1ae9ci.horizontal-2EEEnY.flex-1O1GKY.directionRow-3v3tfG.justifyStart-2NDFzi.alignStretch-DpGPf3.noWrap-3jynv6 > button:nth-child(3)"
     logout_selector = "#app-mount > div.app-1q1i1E > div > div.layers-3iHuyZ.layers-3q14ss > div:nth-child(2) > div > div.sidebarRegion-VFTUkN > div > div > nav > div > div:nth-child(23)"
@@ -119,10 +120,16 @@ class Bot():
             self.username_selector)[0]
         password_textbox = self.driver.find_elements_by_css_selector(
             self.password_selector)[0]
-        terms_checkbox = self.driver.find_elements_by_css_selector(
-            self.terms_selector)[0]
-        next_button = self.driver.find_elements_by_css_selector(self.register_next_selector)[
-            0]
+
+        if self.driver.find_elements_by_css_selector(
+                self.terms_selector):
+            terms_checkbox = self.driver.find_elements_by_css_selector(
+                self.terms_selector)[0]
+            next_button = self.driver.find_elements_by_css_selector(self.register_next_selector)[
+                0]
+        else:
+            next_button = self.driver.find_elements_by_css_selector(self.register_next_selector_us)[
+                0]
 
         email_textbox.send_keys(account.email)
         username_textbox.send_keys(account.username)
