@@ -1,3 +1,4 @@
 tokens/
 /__pycache__/
 debug.log
+/.vscode/
