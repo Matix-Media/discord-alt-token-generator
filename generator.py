@@ -98,7 +98,7 @@ class Bot():
                 0]
             logout_confirm.click()
             time.sleep(self.logout_timeout)
-        except (sel_exceptions.ElementClickInterceptedException, sel_exceptions.NoSuchElementException, sel_exceptions.StaleElementReferenceException) as e:
+        except (sel_exceptions.ElementClickInterceptedException, sel_exceptions.NoSuchElementException, sel_exceptions.StaleElementReferenceException, IndexError, sel_exceptions.ElementClickInterceptedException) as e:
             if stack < 3:
                 self.logout(stack=stack + 1)
             else:
@@ -192,42 +192,50 @@ class Bot():
         return account
 
     def join_server(self, server_invite, direct=False):
-        if not direct:
-            self.driver.get(self.app_home)
-            time.sleep(self.app_nav_timeout)
+        try:
+            if not direct:
+                self.driver.get(self.app_home)
+                time.sleep(self.app_nav_timeout)
 
-        add_server_button = self.driver.find_element_by_class_name(
-            self.add_server_selector)
-        add_server_button.click()
-        time.sleep(self.add_server_popup_timeout)
+            add_server_button = self.driver.find_element_by_class_name(
+                self.add_server_selector)
+            add_server_button.click()
+            time.sleep(self.add_server_popup_timeout)
 
-        join_server_button = self.driver.find_element_by_css_selector(
-            self.join_server_button_selector)
-        join_server_button.click()
-        time.sleep(self.add_server_popup_timeout)
+            join_server_button = self.driver.find_element_by_css_selector(
+                self.join_server_button_selector)
+            join_server_button.click()
+            time.sleep(self.add_server_popup_timeout)
 
-        actions = ActionChains(self.driver)
-        actions.send_keys(server_invite)
-        actions.perform()
+            actions = ActionChains(self.driver)
+            actions.send_keys(server_invite)
+            actions.perform()
 
-        # self.driver.execute_script(
-        #    "document.querySelector(arguments[0]).setAttribute('value', arguments[1]);", self.join_server_tb_selector, server_invite)
+            # self.driver.execute_script(
+            #    "document.querySelector(arguments[0]).setAttribute('value', arguments[1]);", self.join_server_tb_selector, server_invite)
 
-        join_server_confirm_button = self.driver.find_element_by_css_selector(
-            self.join_server_confirm_selector)
-        join_server_confirm_button.click()
-        time.sleep(self.join_server_joining_timeout)
+            join_server_confirm_button = self.driver.find_element_by_css_selector(
+                self.join_server_confirm_selector)
+            join_server_confirm_button.click()
+            time.sleep(self.join_server_joining_timeout)
 
-        return self.driver.current_url
+            return self.driver.current_url
+        except (sel_exceptions.ElementClickInterceptedException, sel_exceptions.NoSuchElementException, sel_exceptions.StaleElementReferenceException, sel_exceptions.ElementNotInteractableException, sel_exceptions.ElementClickInterceptedException) as e:
+            self.logout()
+            return False
 
     def write_message_in_channel(self, channel_url):
-        self.driver.get(channel_url)
-        time.sleep(self.app_nav_timeout)
-        message_box = self.driver.find_element_by_class_name(
-            self.message_box_selector)
-        message_box.send_keys(self.account.welcome_message)
-        message_box.send_keys(Keys.RETURN)
-        return self.account.welcome_message
+        try:
+            self.driver.get(channel_url)
+            time.sleep(self.app_nav_timeout)
+            message_box = self.driver.find_element_by_class_name(
+                self.message_box_selector)
+            message_box.send_keys(self.account.welcome_message)
+            message_box.send_keys(Keys.RETURN)
+            return self.account.welcome_message
+        except (sel_exceptions.ElementClickInterceptedException, sel_exceptions.NoSuchElementException, sel_exceptions.StaleElementReferenceException, sel_exceptions.ElementNotInteractableException, sel_exceptions.ElementClickInterceptedException) as e:
+            self.logout()
+            return False
 
 
         # args
@@ -309,6 +317,7 @@ if not path.isfile("tokens/" + tokens_file_name):
 
 # loop
 print("\nStarting loop...\n")
+generated_tokens = 0
 for i in range(0, alt_tokens_count):
     options = webdriver.ChromeOptions()
     options.add_argument("--user-data-dir=" + chrome_user_data_dir)
@@ -330,11 +339,17 @@ for i in range(0, alt_tokens_count):
     current_bot = Bot(driver, display_userdata=save_userdata)
 
     account = current_bot.generate_token()
+
+    logout_required = False
     if not server_invite == None and not message_channel == None:
         time.sleep(current_bot.join_server_joining_timeout)
-        current_bot.join_server(server_invite, direct=True)
-        current_bot.write_message_in_channel(message_channel)
-    current_bot.logout(direct=True)
+        if current_bot.join_server(server_invite, direct=True):
+            logout_required = current_bot.write_message_in_channel(
+                message_channel)
+
+    if logout_required:
+        print("Logout required.")
+        current_bot.logout(direct=True)
 
     driver.close()
     driver.quit()
