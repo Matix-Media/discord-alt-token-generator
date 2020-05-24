@@ -183,11 +183,17 @@ class Bot():
 
         self.account = account
 
-        if self.driver.find_elements_by_css_selector(self.skip_tutorial_selector):
-            skip_tutorial_button = self.driver.find_elements_by_css_selector(
-                self.skip_tutorial_selector)[0]
-            skip_tutorial_button.click()
-            time.sleep(self.skip_tutorial_timeout)
+        time.sleep(self.app_nav_timeout)
+
+        try:
+            if self.driver.find_elements_by_css_selector(self.skip_tutorial_selector):
+                skip_tutorial_button = self.driver.find_elements_by_css_selector(
+                    self.skip_tutorial_selector)[0]
+                skip_tutorial_button.click()
+                time.sleep(self.skip_tutorial_timeout)
+
+        except (sel_exceptions.ElementClickInterceptedException, sel_exceptions.NoSuchElementException, sel_exceptions.StaleElementReferenceException, sel_exceptions.ElementNotInteractableException, sel_exceptions.ElementClickInterceptedException, IndexError) as e:
+            pass
 
         return account
 
@@ -340,29 +346,39 @@ for i in range(0, alt_tokens_count):
 
     account = current_bot.generate_token()
 
-    logout_required = False
-    if not server_invite == None and not message_channel == None:
-        time.sleep(current_bot.join_server_joining_timeout)
-        if current_bot.join_server(server_invite, direct=True):
-            logout_required = current_bot.write_message_in_channel(
-                message_channel)
+    error_creating = False
+    try:
+        logout_required = False
+        if not server_invite == None and not message_channel == None:
+            time.sleep(current_bot.join_server_joining_timeout)
+            if current_bot.join_server(server_invite, direct=True):
+                logout_required = current_bot.write_message_in_channel(
+                    message_channel)
 
-    if logout_required:
-        print("Logout required.")
-        current_bot.logout(direct=True)
+        if logout_required:
+            print("Logout required.")
+            current_bot.logout(direct=True)
+    except:
+        print("Error creating Token. Skipping.")
+        error_creating = True
 
     driver.close()
     driver.quit()
 
-    if account != None:
-        with open("tokens/" + tokens_file_name, "a+") as f:
-            if save_userdata:
-                f.write("Mail: " + account.email + " Username: " +
-                        account.username + "Password: " + account.password + "Token: " + account.token + "\n")
-            else:
-                f.write(account.token + "\n")
+    if not error_creating:
+        generated_tokens += 1
+        print("Token", generated_tokens, "/", alt_tokens_count)
 
-        print("Timeout before next register:", register_delay)
-        time.sleep(register_delay)
+        if account is not None:
+            with open("tokens/" + tokens_file_name, "a+") as f:
+                if save_userdata:
+                    f.write("Mail: " + account.email + " Username: " +
+                            account.username + "Password: " + account.password + "Token: " + account.token + "\n")
+                else:
+                    f.write(account.token + "\n")
+
+            print("Timeout before next register:", register_delay)
+            time.sleep(register_delay)
+
 
 print("\nDONE Generarating " + str(alt_tokens_count) + " alt-tokens.")
